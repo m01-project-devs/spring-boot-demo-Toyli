@@ -1,6 +1,6 @@
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id BIGINT PRIMARY KEY,
+    email VARCHAR(255),
+    password VARCHAR(255),
+    username VARCHAR(255)
 );
