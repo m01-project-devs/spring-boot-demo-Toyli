@@ -2,75 +2,139 @@ package com.m01project.taskmanager.sevice;
 
 import com.m01project.taskmanager.model.User;
 import com.m01project.taskmanager.repository.UserRepository;
-import com.m01project.taskmanager.service.UserService;
 import com.m01project.taskmanager.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.mockito.ArgumentCaptor;
 
-import java.util.Optional;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class UserServiceTest {
 
-    private UserRepository userRepository;
-    private UserService userService;
+    private UserRepository repo;
+    private UserServiceImpl service;
 
     @BeforeEach
-    void setup() {
-        userRepository = Mockito.mock(UserRepository.class);
-        userService = new UserServiceImpl(userRepository);
+    void setUp() {
+        repo = mock(UserRepository.class);
+        service = new UserServiceImpl(repo);
     }
 
     @Test
-    void testCreateUser() {
-        User user = new User(1L, "john", "john@gmail.com", "1234");
+    void createUser_savesAndReturnsSavedUser() {
+        // prepare
+        User toSave = new User();
+        toSave.setEmail("create@example.com");
+        toSave.setUsername("createUser");
+        toSave.setPassword("pass");
 
-        when(userRepository.save(user)).thenReturn(user);
+        User saved = new User();
+        saved.setId(10L);
+        saved.setEmail("create@example.com");
+        saved.setUsername("createUser");
+        saved.setPassword("pass");
 
-        User saved = userService.create(user);
+        when(repo.save(any(User.class))).thenReturn(saved);
 
-        assertEquals("john", saved.getUsername());
-        assertEquals("john@gmail.com", saved.getEmail());
+        // act
+        User result = service.create(toSave);
+
+        // assert
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(10L);
+        assertThat(result.getEmail()).isEqualTo("create@example.com");
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(repo).save(captor.capture());
+        assertThat(captor.getValue().getEmail()).isEqualTo("create@example.com");
     }
 
     @Test
-    void testGetUserById() {
-        User user = new User(1L, "john", "john@gmail.com", "1234");
+    void getById_whenExists_returnsOptionalWithUser() {
+        User u = new User();
+        u.setId(5L);
+        u.setEmail("g@e.com");
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(repo.findById(5L)).thenReturn(Optional.of(u));
 
-        Optional<User> result = userService.getById(1L);
+        Optional<User> opt = service.getById(5L);
 
-        assertTrue(result.isPresent());
-        assertEquals("john", result.get().getUsername());
+        assertThat(opt).isPresent();
+        assertThat(opt.get().getId()).isEqualTo(5L);
+        assertThat(opt.get().getEmail()).isEqualTo("g@e.com");
     }
 
     @Test
-    void testGetAllUsers() {
-        List<User> users = List.of(
-                new User(1L, "john", "john@gmail.com", "1234"),
-                new User(2L, "mike", "mike@gmail.com", "abcd")
-        );
+    void getAll_returnsAllUsers() {
+        User a = new User(); a.setId(1L); a.setEmail("a@a.com");
+        User b = new User(); b.setId(2L); b.setEmail("b@b.com");
 
-        when(userRepository.findAll()).thenReturn(users);
+        when(repo.findAll()).thenReturn(List.of(a, b));
 
-        List<User> result = userService.getAll();
+        List<User> list = service.getAll();
 
-        assertEquals(2, result.size());
+        assertThat(list).hasSize(2);
+        assertThat(list).extracting(User::getId).containsExactly(1L, 2L);
     }
 
     @Test
-    void testDeleteUser() {
-        Long userId = 1L;
+    void update_existingUser_updatesFieldsAndReturnsUpdated() {
+        // existing in DB
+        User existing = new User();
+        existing.setId(3L);
+        existing.setUsername("old");
+        existing.setEmail("old@example.com");
+        existing.setPassword("oldpass");
 
-        doNothing().when(userRepository).deleteById(userId);
+        // incoming update payload
+        User incoming = new User();
+        incoming.setUsername("new");
+        incoming.setEmail("new@example.com");
+        incoming.setPassword("newpass");
 
-        userService.delete(userId);
+        when(repo.findById(3L)).thenReturn(Optional.of(existing));
+        when(repo.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        verify(userRepository, times(1)).deleteById(userId);
+        User updated = service.update(3L, incoming);
+
+        assertThat(updated.getId()).isEqualTo(3L);
+        assertThat(updated.getUsername()).isEqualTo("new");
+        assertThat(updated.getEmail()).isEqualTo("new@example.com");
+        // fixed expected password -> "newpass"
+        assertThat(updated.getPassword()).isEqualTo("newpass");
+
+        verify(repo).findById(3L);
+        verify(repo).save(existing);
+    }
+
+    @Test
+    void update_whenNotFound_throwsNoSuchElementException() {
+        User incoming = new User();
+        incoming.setEmail("x@x.com");
+
+        when(repo.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(99L, incoming))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessageContaining("User not found");
+
+        verify(repo).findById(99L);
+        verify(repo, never()).save(any());
+    }
+
+    @Test
+    void delete_callsRepositoryDeleteById() {
+        // default behavior: do nothing on delete
+        doNothing().when(repo).deleteById(4L);
+
+        service.delete(4L);
+
+        verify(repo).deleteById(4L);
     }
 }

@@ -22,6 +22,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User create(User user) {
+        // ID should be null so JPA creates a new row
         user.setId(null);
         return userRepository.save(user);
     }
@@ -38,11 +39,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User update(Long id, User user) {
+        // sunny-day: assume user exists -> throw if not
         User existing = userRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("User not found"));
+                .orElseThrow(() -> new NoSuchElementException("User not found: " + id));
 
-        existing.setUsername(user.getUsername());
+        // Update allowed fields
         existing.setEmail(user.getEmail());
+        existing.setUsername(user.getUsername());
         existing.setPassword(user.getPassword());
 
         return userRepository.save(existing);
