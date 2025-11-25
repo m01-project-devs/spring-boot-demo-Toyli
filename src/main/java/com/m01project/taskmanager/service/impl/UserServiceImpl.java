@@ -22,7 +22,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User create(User user) {
-        user.setId(null);
+
         return userRepository.save(user);
     }
 
@@ -37,8 +37,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User update(Long id, User user) {
-        User existing = userRepository.findById(id)
+    public User update(Long email, User user) {
+        User existing = userRepository.findById(email)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
 
         existing.setUsername(user.getUsername());
@@ -49,7 +49,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void delete(Long id) {
-        userRepository.deleteById(id);
+    public void delete(Long email) {
+        userRepository.deleteById(email);
     }
 }
