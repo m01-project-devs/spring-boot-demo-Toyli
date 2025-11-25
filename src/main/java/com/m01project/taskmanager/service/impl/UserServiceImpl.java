@@ -49,7 +49,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void delete(Long email) {
-        userRepository.deleteById(email);
+    public void delete(String email) {
+        userRepository.deleteByEmail(email);
     }
+
 }
