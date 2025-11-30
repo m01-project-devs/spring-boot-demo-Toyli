@@ -21,7 +21,12 @@ class UserServiceTest {
     @BeforeEach
     void setup() {
         userRepository = Mockito.mock(UserRepository.class);
-        userService = new UserServiceImpl(userRepository);
+        userService = new UserServiceImpl(userRepository) {
+            @Override
+            public User create(User user) {
+                return null;
+            }
+        };
     }
 
     @Test
