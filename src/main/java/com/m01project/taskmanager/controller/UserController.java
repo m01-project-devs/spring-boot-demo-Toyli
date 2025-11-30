@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
+
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -21,9 +23,9 @@ public class UserController {
         return userService.create(user);
     }
 
-    @GetMapping("/{id}")
-    public User getUser(@PathVariable Long id) {
-        return userService.getById(id).orElse(null);
+    @GetMapping("/{email}")
+    public User getUser(@PathVariable Long email) {
+        return userService.getById(email).orElse(null);
     }
 
     @GetMapping
@@ -31,13 +33,13 @@ public class UserController {
         return userService.getAll();
     }
 
-    @PutMapping("/{id}")
-    public User updateUser(@PathVariable Long id, @RequestBody User user) {
-        return userService.update(id, user);
+    @PutMapping("/{email}")
+    public User updateUser(@PathVariable Long email, @RequestBody User user) {
+        return userService.update(email, user);
     }
 
-    @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable Long id) {
-        userService.delete(id);
+    @DeleteMapping("/{email}")
+    public void deleteUser(@PathVariable Long email) {
+        userService.delete(email);
     }
 }
